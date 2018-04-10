@@ -3,6 +3,9 @@ package gs.nick
 import scala.collection.JavaConverters.mapAsJavaMap
 import java.io.{OutputStreamWriter, StringReader, StringWriter, Writer}
 
+import java.util.{Map => JMap}
+import scala.collection.JavaConverters._
+
 import com.github.mustachejava.{DefaultMustacheFactory, MustacheFactory}
 
 
@@ -12,16 +15,30 @@ object App {
     def getDescription() = description
   }
 
+  def mapToJava[K,V](m: Map[K,V]): JMap[K,Any] = {
+    val n = m.mapValues {
+      case v: Map[String, Any] => mapToJava(v)
+      case v: Any => v
+    }.asJava
+    n
+  }
+
   val scopes = Map(
     "name" -> "Mustache",
-    "feature" -> mapAsJavaMap(Map("description" -> "Perfect!"))
+    "feature" -> Map("description" -> "Perfect!"),
+    "deep" -> Map(
+      "level" -> Map(
+        "depth" -> "three",
+        "last" -> "true"
+      )
+    )
   )
 
-  val template: String = "{{name}}, {{feature.description}}!"
+  val template: String = "{{name}}, {{feature.description}}! {{deep.level.depth}} and {{deep.level.last}}"
 
   def main(args : Array[String]) {
 
-    val jmap = mapAsJavaMap(scopes)
+    val jmap = mapToJava(scopes)
 
     val writer: Writer = new StringWriter()
     val mf: MustacheFactory = new DefaultMustacheFactory()
